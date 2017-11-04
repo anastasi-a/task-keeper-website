@@ -40,6 +40,9 @@ body{
     display: inline-block;
 }
 
+.task-status{
+    background-color: palegreen;
+}
 
 /*
  * Base structure
