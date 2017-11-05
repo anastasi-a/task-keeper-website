@@ -18,12 +18,10 @@ var tab1 = new Tab('home', 1, '1-content', false);
 var tab2 = new Tab('work', 2, '2-content', false);
 var tab3 = new Tab('rest', 3, '3-content', true);
 
-// tabs.push(tab1);
-// tabs.push(tab2);
-// tabs.push(tab3);
 
 $('#addTab').click(function () {
     var name = $('#inputTab').val();
+    $('#inputTab').val('');
     console.log(name);
     if (tabs.length === 0) {
         item = 1;
@@ -31,15 +29,21 @@ $('#addTab').click(function () {
         item = parseInt($('.tab-list').find('li:last').attr('id'), 10) + 1;
     }
     var content = item + '-content';
-    newTab(name, item, content);
+
+    if (name.length === 0){
+        $('.errorTab').css('display', 'block');
+    } else {
+        $('.errorTab').css('display', 'none');
+        newTab(name, item, content);
+    }
 });
 
 function newTab(name, item, content) {
     var tab = new Tab(name, item, content);
     tabs.push(tab);
     console.log(tabs);
-    $('.tab-list').append('<li id="' + item + '" class="nav-item tab"><a class="nav-link" href="#">' + name + '</a></li>');
-    $('#allContentBlocks').append('<section id="' + content + '" class="row text-center placeholders content"><div class="col-6 col-sm-3 placeholder task"><div class="form-group new-tab-form"> <input type="taskContent" class="form-control input-task" placeholder="New task"><textarea type="text" class="form-control input-comment" placeholder="Comment..."></textarea><button type="submit" class="btn btn-primary add-task">add</button> </div> </div></section>');
+    $('.tab-list').append('<li id="' + item + '" class="nav-item tab"><a class="nav-link" href="#">' + name + '</a><button type="submit" class="btn btn-primary remove-tab">remove</button> </li>');
+    $('#allContentBlocks').append('<section id="' + content + '" class="row text-center placeholders content"><div class="col-6 col-sm-3 placeholder task"><div class="form-group new-tab-form"><span class="errorTask">Введите название задачи!</span> <input type="taskContent" class="form-control input-task" placeholder="New task"><textarea type="text" class="form-control input-comment" placeholder="Comment..."></textarea><button type="submit" class="btn btn-primary add-task">add</button> </div> </div></section>');
     console.log(content);
     saveToStorage(tabs);
 }
@@ -65,7 +69,76 @@ Tabs.prototype.activation = function (id) {
         }
     });
     console.log(tabs);
+    saveToStorage(tabs);
 }
+
+//edit tab
+$('.tab-list').delegate('.tab', 'dblclick', function () {
+    var item = '#' + $(this).attr('id');
+    var name = $(item).find('a').html();
+    console.log(item);
+    editTab(item, name);
+});
+
+function editTab(item, name) {
+    console.log('editTab');
+
+    $(item).children().remove();
+    $(item).append('<input type="text" class="form-control input-tab" value="' + name + '" placeholder=""><button type="submit" class="btn btn-primary save-tab">save</button></div>');
+}
+
+// save tab
+$('.tab-list').delegate('.save-tab', 'click', function () {
+    var tabId = $(this).closest('li').attr('id');
+    var item = parseInt(tabId, 10);
+    var name = $('#' + item).find('.input-tab').val();
+    saveTab(item, name);
+    console.log(item, name);
+});
+
+function saveTab(item, name) {
+    console.log('savetab');
+    tabs.forEach(function (tab, index) {
+        if (tabs[index].item === item) {
+            console.log(item);
+            // tabs[index].item = item;
+            tabs[index].name = name;
+            console.log('ok');
+        }
+    });
+    $('#' + item).children().remove();
+    $('#' + item).append('<a class="nav-link" href="#">' + name + '</a><button type="submit" class="btn btn-primary remove-tab">remove</button>');
+    saveToStorage(tabs);
+}
+
+
+//remove tab
+
+$('.tab-list').delegate('.remove-tab', 'click', function (event) {
+    var tabId = $(this).closest('li').attr('id');
+    var item = parseInt(tabId, 10);
+    removeTab(item);
+    event.stopPropagation();
+    console.log(item);
+});
+
+function removeTab(item) {
+    console.log('start remove');
+    tabs.forEach(function (tab, index) {
+        console.log('start remove 2');
+        if (tabs[index].item === item) {
+            var num = tabs.indexOf(tabs[index]);
+            var sectionId = tabs[index].content;
+            $('#' + item).remove();
+            tabs.splice(num, 1);
+            console.log('num: ' + num);
+            console.log('remove tab');
+            $('#' + sectionId).remove();
+        }
+    });
+    saveToStorage(tabs);
+}
+
 
 //create task
 
@@ -73,7 +146,7 @@ function Task(taskName, taskId, taskComment) {
     this.taskName = taskName;
     this.taskId = taskId;
     this.taskComment = taskComment;
-    // this.active = false;
+    this.done = false;
 }
 
 //add new task
@@ -84,18 +157,28 @@ $('main').delegate('.add-task', 'click', function () {
     var sectionIdEl = '#' + sectionId;
     var taskName = $(sectionIdEl).find('.input-task').val();
     var taskId;
+    var sectionNubmer = sectionId.split('-');
+    console.log(sectionNubmer);
     if ($(sectionIdEl).find('.task:last').index() === 0) {
-        taskId = 'task-1';
+        taskId = sectionNubmer[0] + 'task-1';
     } else {
         var lastTask = $(sectionIdEl).find('.task:last').attr('id').split('-');
-        taskId = 'task-' + (parseInt(lastTask[1]) + 1);
+        taskId = sectionNubmer[0] + 'task-' + (parseInt(lastTask[1]) + 1);
         console.log(taskId);
     }
     // var taskId = 'task-' + ($('#' + sectionId).find('.task:last').index() + 1);
     var taskComment = $(sectionIdEl).find('.input-comment').val();
+    $("input").val('');
+    $("textarea").val('');
 
-    newTask(sectionId, sectionIdEl, taskName, taskId, taskComment);
+    if (taskName.length === 0){
+        $('.errorTask').css('display', 'block');
+    } else {
+        $('.errorTask').css('display', 'none');
+        newTask(sectionId, sectionIdEl, taskName, taskId, taskComment);
+    }
 });
+
 
 function newTask(sectionId, sectionIdEl, taskName, taskId, taskComment) {
     var task = new Task(taskName, taskId, taskComment);
@@ -153,17 +236,42 @@ function saveTask(sectionId, taskId, taskIdEl, taskName, taskComment) {
     saveToStorage(tabs);
 }
 
-//done and remove
+//done task
 
 $('main').delegate('.done-task', 'click', function () {
-    var taskId = '#' + $(this).closest('.task').attr('id');
-    if ($(taskId).hasClass('task-status')) {
-        $(taskId).removeClass('task-status');
+    var sectionId = $(this).closest('section').attr('id');
+    var taskId = $(this).closest('.task').attr('id');
+    var taskTag = '#' + taskId;
+    var done;
+    if ($(taskTag).hasClass('task-status')) {
+        $(taskTag).removeClass('task-status');
+        done = false;
     } else {
-        $(taskId).addClass('task-status');
+        $(taskTag).addClass('task-status');
+        done = true;
     }
-    console.log(taskId);
+    console.log(done);
+    doneTask(sectionId, taskId, done);
 });
+
+function doneTask(sectionId, taskId, done) {
+    console.log(done, taskId);
+    tabs.forEach(function (tab, index) {
+        if (tabs[index].content === sectionId) {
+            var list = tabs[index].taskList;
+            list.forEach(function (task, index) {
+                console.log(list);
+                if (list[index].taskId === taskId) {
+                    console.log(done);
+                    list[index].done = done;
+                }
+            });
+        }
+    });
+    saveToStorage(tabs);
+}
+
+//remove task
 
 $('main').delegate('.remove-task', 'click', function () {
     var sectionId = $(this).closest('section').attr('id');
@@ -179,15 +287,15 @@ function removeTask(sectionId, taskId) {
             list.forEach(function (task, index) {
             console.log(list);
             if (list[index].taskId === taskId) {
-                delete list[index];
-                console.log(tabs);
+                var num = list.indexOf(list[index]);
                 $('#' + taskId).remove();
+                list.splice(num, 1);
+                console.log('num: ' + num);
+                console.log('remove tag');
             }
             });
         }
     });
-
-
     saveToStorage(tabs);
 }
 
@@ -272,8 +380,8 @@ function createHtmlElements(tabs) {
         var name = tabs[index].name;
         var content = tabs[index].content;
         var active = tabs[index].active;
-        $('.tab-list').append('<li id="' + item + '" class="nav-item tab"><a class="nav-link" href="#">' + name + '</a></li>');
-        $('#allContentBlocks').append('<section id="' + content + '" class="row taskContent-center placeholders content"><div class="col-6 col-sm-3 placeholder task"><div class="form-group new-tab-form"> <input type="taskContent" class="form-control input-task" placeholder="New task"><textarea type="text" class="form-control input-comment" placeholder="Comment..."></textarea><button type="submit" class="btn btn-primary add-task">add</button> </div> </div></section>');
+        $('.tab-list').append('<li id="' + item + '" class="nav-item tab"><a class="nav-link" href="#">' + name + '</a><button type="submit" class="btn btn-primary remove-tab">remove</button></li>');
+        $('#allContentBlocks').append('<section id="' + content + '" class="row taskContent-center placeholders content"><div class="col-6 col-sm-3 placeholder task"><div class="form-group new-tab-form"><span class="errorTask">Введите название задачи!</span> <input type="taskContent" class="form-control input-task" placeholder="New task"><textarea type="text" class="form-control input-comment" placeholder="Comment..."></textarea><button type="submit" class="btn btn-primary add-task">add</button> </div> </div></section>');
 
         if (tabs[index].content === content) {
             var list = tabs[index].taskList;
@@ -293,8 +401,25 @@ function createHtmlElements(tabs) {
         // console.log(taskId);
 
     });
+    tabActivation(tabs);
 
     // $('.tab-list').append('<li id="' + item + '" class="nav-item tab"><a class="nav-link" href="#">' + name + '</a></li>');
     // $('#allContentBlocks').append('<section id="' + content + '" class="row taskContent-center placeholders content"><div class="col-6 col-sm-3 placeholder task"><div class="form-group new-tab-form"> <input type="taskContent" class="form-control input-task" placeholder="New task"><textarea type="text" class="form-control input-comment" placeholder="Comment..."></textarea><button type="submit" class="btn btn-primary add-task">add</button> </div> </div></section>');
     // $(sectionIdEl).append(' <div id="' + taskId + '" class="col-6 col-sm-3 placeholder task"><span class="text-muted name-task">' + taskName + '</span><br><span class="text-muted comment-task">' + taskComment + '</span><button type="submit" class="btn btn-primary edit-task">edit</button><button type="submit" class="btn btn-primary done-task">done</button><button type="submit" class="btn btn-primary remove-task">remove</button></div>');
+}
+
+function tabActivation() {
+    tabs.forEach(function (item, num) {
+        if (tabs[num].active === true) {
+            $('#' + tabs[num].item).addClass('active-tab');
+            $('#' + tabs[num].content).addClass('active-content');
+            var list = tabs[num].taskList;
+            list.forEach(function (task, index) {
+                console.log(list);
+                if (list[index].done === true) {
+                    $('#' + list[index].taskId).addClass('task-status');
+                }
+            });
+        }
+    });
 }

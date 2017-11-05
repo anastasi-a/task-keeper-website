@@ -101,6 +101,20 @@ h1 {
     border-radius: 0;
 }
 
+
+.errorTab{
+    display: none;
+    font-size: 10px;
+    color: red;
+}
+
+
+.errorTask{
+    display: none;
+    font-size: 10px;
+    color: red;
+}
+
 /*
  * Dashboard
  */
